@@ -2,7 +2,7 @@
 FROM node:latest
 
 # Defina o diretório de trabalho no contêiner
-WORKDIR /SCC_PROJETO
+WORKDIR /usr/src/app
 
 # Copie o arquivo package.json e package-lock.json para o contêiner
 COPY package*.json ./
