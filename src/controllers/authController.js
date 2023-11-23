@@ -5,30 +5,48 @@ const User = require("../models/userModel");
 const jwt = require("jsonwebtoken");
 const Login = require("../models/login");
 const apiResponse = require("../utils/response");
-const { certifyAccessToken } = require("../utils/auth");
+const { generateAccessToken } = require("../utils/auth");
 
 exports.changePassword = async (req, res) => {
   try {
-    const { token, oldPassword, newPassword } = req.body;
-    certifyAccessToken(token);
+    const { oldPassword, newPassword } = req.body;
+    const tokenWithBearer = req.headers["authorization"];
+
+    console.log(oldPassword);
+    console.log(newPassword);
+    console.log(tokenWithBearer);
 
     if (!oldPassword || !newPassword) {
+      console.log("all fields are required");
       return apiResponse.send(res, apiResponse(400, "all fields are required"));
     }
 
     if (newPassword.length < 6) {
+      console.log("password must be at least 6 characters");
       return apiResponse.send(
         res,
         apiResponse(400, "password must be at least 6 characters")
       );
     }
 
+    const token = tokenWithBearer.split(" ")[1];
+
     const user = jwt.verify(token, process.env.TOKEN_SECRET);
-    const _id = user.id;
+    console.log(user);
+    const id = user.id;
+    console.log(id);
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const newHashedPassword = await bcrypt.hash(newPassword, 10);
 
-    await User.updateOne({ _id }, { password: hashedPassword });
+    // Encontre e atualize o usuário com base no _id
+    const filter = { _id: user?.idLogin };
+    const update = { password: newHashedPassword };
+
+    const UserUpdated = await Login.findOneAndUpdate(filter, update, {
+      new: true,
+    });
+
+    console.log(UserUpdated);
 
     return apiResponse.send(
       res,
@@ -44,15 +62,14 @@ exports.changePassword = async (req, res) => {
 
 exports.login = async (req, res) => {
   const { username, password } = req.body;
-//console.log(username);
- // console.log(password);
+
   if (!username || !password) {
     const passwordError = apiResponse(400, "all fields are required");
     return apiResponse.send(res, passwordError);
   }
 
   const user = await Login.findOne({ username }).lean();
- // console.log(user);
+
   if (!user) {
     const UserNotFound = apiResponse.createModelRes(404, "user not found");
     return apiResponse.send(res, UserNotFound);
@@ -61,24 +78,21 @@ exports.login = async (req, res) => {
     const idUserLogged = user._id;
     const userLogged = await User.findOne({ loginId: idUserLogged }).lean();
 
-    try {
-      const token = jwt.sign(
-        {
-          id: userLogged.id,
-          username: userLogged.username,
-          role: userLogged.role,
-        },
-        process.env.TOKEN_SECRET,
-        { expiresIn: "24h" }
-      );
-      const loginDone = apiResponse.createModelRes(200, "login success", {
-        token,
-      });
+    const id = userLogged._id;
+    const username = user.username;
+    const role = userLogged.role;
+    const idLogin = user._id;
 
-      //console.log(userLogged);
-      //console.log(user.username);
-      //console.log(userLogged.role);
-      //console.log(userLogged._id);
+    try {
+      const accessToken = generateAccessToken({
+        id,
+        username,
+        role,
+        idLogin,
+      });
+      const loginDone = apiResponse.createModelRes(200, "login success", {
+        accessToken,
+      });
       return apiResponse.send(res, loginDone);
     } catch (err) {
       const loginError = apiResponse.createModelRes(500, "login error");
