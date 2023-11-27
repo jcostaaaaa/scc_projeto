@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken");
 const Login = require("../models/login");
 const apiResponse = require("../utils/response");
 const { generateAccessToken } = require("../utils/auth");
+const { addToBlacklist } = require("../utils/blacklist");
 
 exports.changePassword = async (req, res) => {
   try {
@@ -38,7 +39,6 @@ exports.changePassword = async (req, res) => {
 
     const newHashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Encontre e atualize o usuário com base no _id
     const filter = { _id: user?.idLogin };
     const update = { password: newHashedPassword };
 
@@ -47,7 +47,7 @@ exports.changePassword = async (req, res) => {
     });
 
     console.log(UserUpdated);
-
+    console.log(update.password);
     return apiResponse.send(
       res,
       apiResponse.createModelRes(200, "password changed")
@@ -203,13 +203,19 @@ exports.register = async (req, res) => {
   }
 };
 
-exports.deleteUser = async (id) => {
+exports.deleteUser = async (req, res) => {
+  const tokenWithBearer = req.headers["authorization"];
+  const token = tokenWithBearer.split(" ")[1];
+
+  const userLogged = jwt.verify(token, process.env.TOKEN_SECRET);
   try {
-    const user = await User.findByIdAndDelete(id);
+    const user = await User.findById(userLogged.id);
     if (!user) {
       const errorFind = apiResponse.createModelRes(404, "UserNotFound", {});
       return apiResponse.send(res, errorFind);
     }
+
+    user.isDeleted = true;
 
     const deletedResponse = apiResponse.createModelRes(200, "UserDeleted", {});
     return apiResponse.send(res, deletedResponse);
@@ -225,9 +231,20 @@ exports.deleteUser = async (id) => {
   }
 };
 
-exports.editUser = async (res, id, userData) => {
+exports.editUser = async (req, res) => {
+  const tokenWithBearer = req.headers["authorization"];
+  const token = tokenWithBearer.split(" ")[1];
+
+  const { email, firstName, lastName, username } = req.body;
+  console.log(email);
+  console.log(firstName);
+  console.log(lastName);
+  console.log(username);
+
+  const userLogged = jwt.verify(token, process.env.TOKEN_SECRET);
+
   try {
-    const user = await User.findById(id);
+    const user = await User.findById(userLogged.id);
 
     if (!user) {
       return apiResponse.send(
@@ -235,12 +252,10 @@ exports.editUser = async (res, id, userData) => {
         apiResponse.createModelRes(404, "UserNotFound", {})
       );
     }
-
-    user.firstName = userData.firstName || user.firstName;
-    user.lastName = userData.lastName || user.lastName;
-    user.email = userData.email || user.email;
-    user.username = userData.username || user.username;
-    user.birthdate = userData.birthdate || user.birthdate;
+    user.firstName = firstName;
+    user.lastName = lastName;
+    user.email = email;
+    user.username = username;
 
     await user.save();
 
@@ -258,5 +273,30 @@ exports.editUser = async (res, id, userData) => {
 };
 
 exports.logout = async (req, res) => {
-  const { token } = req.body;
+  const tokenWithBearer = req.headers["authorization"];
+  console.log(tokenWithBearer);
+  addToBlacklist(tokenWithBearer);
+};
+
+exports.getAllUsersByRole = async (req, res) => {
+  const tokenWithBearer = req.headers["authorization"];
+  const token = tokenWithBearer.split(" ")[1];
+  const { role } = req.body;
+
+  const userLogged = jwt.verify(token, process.env.TOKEN_SECRET);
+  const roleOfUser = userLogged.role;
+
+  if (roleOfUser == "admin" || roleOfUser == "estafeta") {
+    const filter = role ? { role } : {};
+    const users = await User.find(filter);
+    return apiResponse.send(
+      res,
+      apiResponse.createModelRes(200, "Users", users)
+    );
+  } else {
+    return apiResponse.send(
+      res,
+      apiResponse.createModelRes(401, "Unauthorized for this endpoint", {})
+    );
+  }
 };

@@ -34,6 +34,10 @@ const userSchema = new schema(
       type: schema.Types.ObjectId,
       required: true,
     },
+    isDeleted:{
+      type: Boolean,
+      default: false
+    }
   },
   { collection: "users" }
 );
