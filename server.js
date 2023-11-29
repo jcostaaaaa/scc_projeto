@@ -21,7 +21,7 @@ mongoose.connect(uri).then(() => {
 const app = express();
 app.use('/', express.static(path.join(__dirname, 'static')));
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false })); //parse application/x-www-form-urlencoded
+app.use(bodyParser.urlencoded({ extended: false })); 
 
 
 // routes

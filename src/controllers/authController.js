@@ -204,31 +204,51 @@ exports.register = async (req, res) => {
 };
 
 exports.deleteUser = async (req, res) => {
+  const id = req.body.id;
   const tokenWithBearer = req.headers["authorization"];
   const token = tokenWithBearer.split(" ")[1];
 
   const userLogged = jwt.verify(token, process.env.TOKEN_SECRET);
-  try {
-    const user = await User.findById(userLogged.id);
-    if (!user) {
-      const errorFind = apiResponse.createModelRes(404, "UserNotFound", {});
-      return apiResponse.send(res, errorFind);
+  const roleOfUser = userLogged.role;
+  console.log(roleOfUser);
+  console.log(id);
+
+  if (roleOfUser == "admin") {
+    try {
+      const user = await User.findById(id);
+      console.log(user);
+      if (!user) {
+        const errorFind = apiResponse.createModelRes(404, "UserNotFound", {});
+        return apiResponse.send(res, errorFind);
+      }
+      if (user.isDeleted == true) {
+        const errorFind = apiResponse.createModelRes(
+          404,
+          "UserAlreadyDeleted",
+          {}
+        );
+        return apiResponse.send(res, errorFind);
+      }
+
+      user.isDeleted = true;
+      user.save();
+
+      const deletedResponse = apiResponse.createModelRes(
+        200,
+        "UserDeleted",
+        {}
+      );
+      return apiResponse.send(res, deletedResponse);
+    } catch (err) {
+      console.error(err);
     }
-
-    user.isDeleted = true;
-
-    const deletedResponse = apiResponse.createModelRes(200, "UserDeleted", {});
-    return apiResponse.send(res, deletedResponse);
-  } catch (err) {
-    console.error(err);
-
-    const deletedErrorResponse = apiResponse.createModelRes(
-      400,
-      "Eror deleting user",
-      {}
-    );
-    return apiResponse.send(res, deletedErrorResponse);
   }
+  const deletedErrorResponse = apiResponse.createModelRes(
+    400,
+    "Unhauthorized",
+    {}
+  );
+  return apiResponse.send(res, deletedErrorResponse);
 };
 
 exports.editUser = async (req, res) => {

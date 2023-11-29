@@ -1,5 +1,4 @@
-/* const request = require('supertest');
-const app = require('../seu-arquivo-de-aplicativo'); 
+const request = require('supertest');
 const Login = require('../src/models/login'); 
 const bcrypt = require('bcrypt');
 
@@ -51,4 +50,4 @@ describe('POST /login', () => {
     expect(response.body.message).toBe('invalid credentials');
   });
 });
- */
+ 
