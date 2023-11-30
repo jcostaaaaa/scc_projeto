@@ -64,7 +64,7 @@ exports.login = async (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
-    const passwordError = apiResponse(400, "all fields are required");
+    const passwordError = apiResponse.createModelRes(400, "all fields are required");
     return apiResponse.send(res, passwordError);
   }
 

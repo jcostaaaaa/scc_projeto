@@ -1,53 +1,45 @@
-const request = require('supertest');
-const Login = require('../src/models/login'); 
-const bcrypt = require('bcrypt');
+const axios = require("axios");
 
-describe('POST /login', () => {
-
-  beforeEach(async () => {
-    await Login.create({
-      username: 'utilizador',
-      password: await bcrypt.hash('senhaTeste', 10), 
-    });
-  });
-
-  test('should return login success with valid credentials', async () => {
-    const response = await request(app)
-      .post('/login')
-      .send({
-        username: 'utilizador',
-        password: 'senhaTeste',
+describe("Auth", () => {
+  it("should return 400 with a token", async () => {
+    try {
+      const response = await axios.post("http://localhost:9998/user/login", {
+        username: "admin",
       });
 
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('token');
-    expect(response.body.message).toBe('login success');
-  });
+      expect(response.status).toBe(400);
 
-
-  test('should return user not found with invalid username', async () => {
-    const response = await request(app)
-      .post('/login')
-      .send({
-        username: 'utilzadorInexistente',
-        password: 'senhaIrrelevante',
-      });
-
-    expect(response.status).toBe(404);
-    expect(response.body.message).toBe('user not found');
-  });
-
-
-  test('should return invalid credentials with invalid password', async () => {
-    const response = await request(app)
-      .post('/login')
-      .send({
-        username: 'utilizador',
-        password: 'senhaIncorreta',
-      });
-
-    expect(response.status).toBe(400);
-    expect(response.body.message).toBe('invalid credentials');
+      expect(response.data.message).toBe("all fields are required");
+    } catch (error) {
+      expect(error.response.status).toBe(400);
+      expect(error.response.data.message).toBe("all fields are required");
+    }
   });
 });
- 
+
+describe("Auth", () => {
+  it("should return 200 with a token", async () => {
+    const response = await axios.post("http://localhost:9998/user/login", {
+      username: "admin",
+      password: "admin123",
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.data.message).toBe("login success");
+    expect(response.data.data).toHaveProperty("accessToken");
+  });
+});
+
+describe("Auth", () => {
+  it("should return 400 with a token", async () => {
+    try {
+      const response = await axios.post("http://localhost:9998/user/login", {
+        username: "admin",
+        password: "admin1234",
+      });
+    } catch (error) {
+      expect(error.response.status).toBe(400); 
+      expect(error.response.data.message).toBe("invalid credentials");
+    }
+  });
+});

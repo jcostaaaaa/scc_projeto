@@ -1,38 +1,34 @@
-const express = require('express');
-const path = require('path');
-const bodyParser = require('body-parser');
-const mongoose = require('mongoose');
+const express = require("express");
+const path = require("path");
+const bodyParser = require("body-parser");
+const mongoose = require("mongoose");
 
-
-require('dotenv').config();
+require("dotenv").config();
 
 const uri = process.env.ATLAS_URI;
 mongoose.Promise = global.Promise;
-mongoose.connect(uri).then(() => { 
+mongoose
+  .connect(uri)
+  .then(() => {
     console.log("Successfully connected to MongoDB.");
-}).catch(err => {
+  })
+  .catch((err) => {
     console.error("Connection error", err);
-}) 
-  
-
-//Model
+  });
 
 // Midleware
 const app = express();
-app.use('/', express.static(path.join(__dirname, 'static')));
+app.use("/", express.static(path.join(__dirname, "static")));
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false })); 
-
+app.use(bodyParser.urlencoded({ extended: false }));
 
 // routes
-app.use('/user', require('./src/routes/authRoutes'));
+app.use("/user", require("./src/routes/authRoutes"));
 
 // documentation
-app.use('/apidocjs', express.static(path.join(__dirname, 'apidoc')));
+app.use("/apidocjs", express.static(path.join(__dirname, "apidoc")));
 
-
-let port=9999;
+let port = 9998;
 app.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
-    
-})
+  console.log(`Server listening on port ${port}`);
+});
