@@ -67,7 +67,7 @@ app.use("/user", require("./src/routes/authRoutes"));
 
 app.use("/apidocjs", express.static(path.join(__dirname, "apidoc")));
 
-let port = 9999;
+let port = 9998;
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
