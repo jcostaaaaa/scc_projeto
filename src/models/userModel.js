@@ -1,5 +1,4 @@
 "use strict";
-//database schema
 const mongoose = require("mongoose");
 const schema = mongoose.Schema;
 const userSchema = new schema(

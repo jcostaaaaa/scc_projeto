@@ -64,7 +64,10 @@ exports.login = async (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
-    const passwordError = apiResponse.createModelRes(400, "all fields are required");
+    const passwordError = apiResponse.createModelRes(
+      400,
+      "all fields are required"
+    );
     return apiResponse.send(res, passwordError);
   }
 
@@ -140,7 +143,7 @@ exports.register = async (req, res) => {
     });
   }
 
-  const passwordEncrypted = await bcrypt.hash(password, 10); // Number of times to encrypt
+  const passwordEncrypted = await bcrypt.hash(password, 10);
 
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -299,24 +302,39 @@ exports.logout = async (req, res) => {
 };
 
 exports.getAllUsersByRole = async (req, res) => {
-  const tokenWithBearer = req.headers["authorization"];
-  const token = tokenWithBearer.split(" ")[1];
-  const { role } = req.body;
+  try {
+    const tokenWithBearer = req.headers["authorization"];
 
-  const userLogged = jwt.verify(token, process.env.TOKEN_SECRET);
-  const roleOfUser = userLogged.role;
+    const token = tokenWithBearer.split(" ")[1];
 
-  if (roleOfUser == "admin" || roleOfUser == "estafeta") {
-    const filter = role ? { role } : {};
-    const users = await User.find(filter);
+    const userLogged = jwt.verify(token, process.env.TOKEN_SECRET);
+    const roleOfUser = userLogged.role;
+
+    if (
+      roleOfUser === "admin" ||
+      roleOfUser === "estafeta" ||
+      roleOfUser === "customer"
+    ) {
+      const { role } = req.body;
+      const filter = role ? { role } : {};
+
+      const users = await User.find(filter);
+
+      return apiResponse.send(
+        res,
+        apiResponse.createModelRes(200, "Users", users)
+      );
+    } else {
+      return apiResponse.send(
+        res,
+        apiResponse.createModelRes(401, "Unauthorized for this endpoint", {})
+      );
+    }
+  } catch (error) {
+    console.error(error);
     return apiResponse.send(
       res,
-      apiResponse.createModelRes(200, "Users", users)
-    );
-  } else {
-    return apiResponse.send(
-      res,
-      apiResponse.createModelRes(401, "Unauthorized for this endpoint", {})
+      apiResponse.createModelRes(500, "Internal Server Error", {})
     );
   }
 };
