@@ -13,7 +13,7 @@ RUN npm install
 # Copie o código-fonte para o diretório de trabalho no contêiner
 COPY . .
 
-# Exponha a porta que o aplicativo vai escutar
+# Expose port 9999
 EXPOSE 9999
 
 # Comando para iniciar o aplicativo
