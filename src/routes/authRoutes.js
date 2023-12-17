@@ -10,7 +10,6 @@ router.route("/register").post(authController.register);
 router.use(authMiddleware);
 router.route("/changepassword").post(authController.changePassword);
 router.route("/deleteUser").put(authController.deleteUser);
-router.route("/editUser").post(authController.editUser);
 router.route("/logout").post(authController.logout);
 router.route("/getAllUsersByRole").get(authController.getAllUsersByRole);
 router.route("/editUser").post(authController.editUser);
