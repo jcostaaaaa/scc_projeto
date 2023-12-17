@@ -5,6 +5,8 @@ const mongoose = require("mongoose");
 const winston = require("winston");
 require("winston-mongodb");
 const jwt = require("jsonwebtoken");
+const swaggerUi = require("swagger-ui-express"); // Using require for swagger-ui-express
+const swaggerDocument = require("./swagger.json"); // Using require for swagger.json
 
 require("dotenv").config();
 
@@ -64,6 +66,9 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
 app.use("/user", require("./src/routes/authRoutes"));
+
+// swagger documentation
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use("/apidocjs", express.static(path.join(__dirname, "apidoc")));
 
