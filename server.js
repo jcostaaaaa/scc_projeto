@@ -5,8 +5,8 @@ const mongoose = require("mongoose");
 const winston = require("winston");
 require("winston-mongodb");
 const jwt = require("jsonwebtoken");
-const swaggerUi = require("swagger-ui-express"); // Using require for swagger-ui-express
-const swaggerDocument = require("./swagger.json"); // Using require for swagger.json
+const swaggerUi = require("swagger-ui-express"); 
+const swaggerDocument = require("./swagger.json"); 
 
 require("dotenv").config();
 
