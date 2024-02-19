@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scc-projeto-auth
+  labels:
+    app: scc-projeto-auth
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: scc-projeto-auth
+  template:
+    metadata:
+      labels:
+        app: scc-projeto-auth
+    spec:
+      containers:
+        - name: scc-projeto-auth
+          image: sccprojeto/scc_projeto:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 9999
+          env:
+            - name: ATLAS_URI
+              value: 'mongodb+srv://user1:user1@cluster0.opkcw3e.mongodb.net/auth'
+            - name: TOKEN_SECRET
+              value: 'sadsdasljdalskdjalksjdlaksdjasdlkdajsd123ASDasdaSD'
+            - name: ATLAS_URI_LOGS
+              value: 'mongodb+srv://user1:user1@cluster0.opkcw3e.mongodb.net/logs_auth'      
