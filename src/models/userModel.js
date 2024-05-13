@@ -8,7 +8,7 @@ const userSchema = new schema(
       autoIncrement: true,
       allowNull: false,
     },
-    email: {
+    username: {
       type: String,
       required: true,
     },

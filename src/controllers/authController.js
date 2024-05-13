@@ -61,9 +61,9 @@ exports.changePassword = async (req, res) => {
 };
 
 exports.login = async (req, res) => {
-  const { username, password } = req.body;
+  const { email, password } = req.body;
 
-  if (!username || !password) {
+  if (!email || !password) {
     const passwordError = apiResponse.createModelRes(
       400,
       "all fields are required"
@@ -71,7 +71,7 @@ exports.login = async (req, res) => {
     return apiResponse.send(res, passwordError);
   }
 
-  const user = await Login.findOne({ username }).lean();
+  const user = await Login.findOne({ email }).lean();
 
   if (!user) {
     const UserNotFound = apiResponse.createModelRes(404, "user not found");
@@ -152,7 +152,7 @@ exports.register = async (req, res) => {
     const newLogin = await Login.create(
       [
         {
-          username,
+          email,
           password: passwordEncrypted,
         },
       ],
@@ -164,7 +164,7 @@ exports.register = async (req, res) => {
     const newUser = await User.create(
       [
         {
-          email,
+          username,
           firstName,
           lastName,
           birthdate: birthdateDateObject,
@@ -275,12 +275,22 @@ exports.editUser = async (req, res) => {
         apiResponse.createModelRes(404, "UserNotFound", {})
       );
     }
+
+    const loginOfUser = await Login.findById(user.loginId);
+
+    if (!loginOfUser) {
+      return apiResponse.send(
+        res,
+        apiResponse.createModelRes(404, "This user does not have login", {})
+      );
+    }
     user.firstName = firstName;
     user.lastName = lastName;
-    user.email = email;
     user.username = username;
+    loginOfUser.email = email;
 
     await user.save();
+    await loginOfUser.save();
 
     return apiResponse.send(
       res,

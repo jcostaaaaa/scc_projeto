@@ -9,7 +9,7 @@ const loginSchema = new schema(
       autoIncrement: true,
       allowNull: false,
     },
-    username: {
+    email: {
       type: String,
       required: true,
       unique: true,
