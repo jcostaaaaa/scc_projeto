@@ -8,16 +8,80 @@ const apiResponse = require("../utils/response");
 const { generateAccessToken } = require("../utils/auth");
 const { addToBlacklist } = require("../utils/blacklist");
 
-exports.changePassword = async (req, res) => {
+exports.recoverPassword = async (req, res) => {
+  const { newPassword } = req.body;
+  const tokenWithBearer = req.headers["authorization"];
+
   try {
-    const { oldPassword, newPassword } = req.body;
+    if (!newPassword) {
+      return apiResponse.send(
+        res,
+        apiResponse.createModelRes(400, "All fields are required")
+      );
+    }
+
+    if (newPassword.length < 6) {
+      return apiResponse.send(
+        res,
+        apiResponse.createModelRes(
+          400,
+          "Password must be at least 6 characters"
+        )
+      );
+    }
+
+    const token = tokenWithBearer.split(" ")[1];
+    const user = jwt.verify(token, process.env.TOKEN_SECRET);
+    const idUserLogged = user.id;
+
+    const newHashedPassword = await bcrypt.hash(newPassword, 10);
+
+    const loginToUpdate = await User.findOne({ _id: idUserLogged });
+
+    if (loginToUpdate != null) {
+      const filter = { _id: loginToUpdate.loginId };
+      const update = { password: newHashedPassword };
+
+      const userUpdated = await Login.findOneAndUpdate(filter, update, {
+        new: true,
+      });
+
+      if (userUpdated) {
+        return apiResponse.send(
+          res,
+          apiResponse.createModelRes(200, "Password changed successfully")
+        );
+      } else {
+        return apiResponse.send(
+          res,
+          apiResponse.createModelRes(400, "Failed to update password")
+        );
+      }
+    } else {
+      return apiResponse.send(
+        res,
+        apiResponse.createModelRes(400, "User not found")
+      );
+    }
+  } catch (err) {
+    console.error(err);
+    return apiResponse.send(
+      res,
+      apiResponse.createModelRes(500, "Password change error")
+    );
+  }
+};
+
+/*  exports.changePassword = async (req, res) => {
+  try {
+    const { newPassword } = req.body;
     const tokenWithBearer = req.headers["authorization"];
 
     console.log(oldPassword);
     console.log(newPassword);
     console.log(tokenWithBearer);
 
-    if (!oldPassword || !newPassword) {
+    if (!newPassword) {
       console.log("all fields are required");
       return apiResponse.send(res, apiResponse(400, "all fields are required"));
     }
@@ -42,6 +106,8 @@ exports.changePassword = async (req, res) => {
     const filter = { _id: user?.idLogin };
     const update = { password: newHashedPassword };
 
+    const loginToUpdate =
+
     const UserUpdated = await Login.findOneAndUpdate(filter, update, {
       new: true,
     });
@@ -59,7 +125,8 @@ exports.changePassword = async (req, res) => {
     );
   }
 };
-
+ 
+ */
 exports.login = async (req, res) => {
   const { email, password } = req.body;
 
@@ -85,6 +152,8 @@ exports.login = async (req, res) => {
     const username = user.username;
     const role = userLogged.role;
     const idLogin = user._id;
+    const emailUser = email;
+    const nameUser = userLogged.firstName + " " + userLogged.lastName;
 
     try {
       const accessToken = generateAccessToken({
@@ -92,10 +161,13 @@ exports.login = async (req, res) => {
         username,
         role,
         idLogin,
+        emailUser,
+        nameUser,
       });
       const loginDone = apiResponse.createModelRes(200, "login success", {
         accessToken,
       });
+      console.log(email);
       return apiResponse.send(res, loginDone);
     } catch (err) {
       const loginError = apiResponse.createModelRes(500, "login error");
@@ -116,18 +188,7 @@ exports.register = async (req, res) => {
     req.body;
   const birthdateDateObject = new Date(birthdate);
 
-  if (password.length < 6) {
-    const passwordLengthError = apiResponse.createModelRes(
-      400,
-      "The password must be at least 6 characters"
-    );
-    return apiResponse.send(res, passwordLengthError);
-  }
-  if (!email.includes("@")) {
-    const errorEmail = apiResponse.createModelRes(400, "Invalid email");
-    return apiResponse.send(res, errorEmail);
-  }
-
+  // Validate required fields
   if (
     !username ||
     !password ||
@@ -143,69 +204,105 @@ exports.register = async (req, res) => {
     });
   }
 
-  const passwordEncrypted = await bcrypt.hash(password, 10);
+  // Validate password length
+  if (password.length < 6) {
+    const passwordLengthError = apiResponse.createModelRes(
+      400,
+      "The password must be at least 6 characters"
+    );
+    return apiResponse.send(res, passwordLengthError);
+  }
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  // Validate email format
+  if (!email.includes("@")) {
+    const errorEmail = apiResponse.createModelRes(400, "Invalid email");
+    return apiResponse.send(res, errorEmail);
+  }
 
   try {
-    const newLogin = await Login.create(
-      [
-        {
-          email,
-          password: passwordEncrypted,
-        },
-      ],
-      { session }
-    );
-
-    console.log(newLogin);
-
-    const newUser = await User.create(
-      [
-        {
-          username,
-          firstName,
-          lastName,
-          birthdate: birthdateDateObject,
-          role,
-          loginId: newLogin[0]._id,
-        },
-      ],
-      { session }
-    );
-
-    console.log(newLogin);
-
-    await session.commitTransaction();
-    session.endSession();
-
-    console.log(newUser, newLogin);
-
-    res.json({
-      message: "Register successful",
-      status: 200,
-    });
-  } catch (err) {
-    console.error(err);
-
-    await session.abortTransaction();
-    session.endSession();
-
-    if (err.code === 11000) {
+    const existingLogin = await Login.findOne({ email });
+    if (existingLogin) {
       return res.json({
-        message: "User already exists",
+        message: "Email already exists",
         status: 400,
       });
     }
 
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+      return res.json({
+        message: "Username already exists",
+        status: 400,
+      });
+    }
+
+    const passwordEncrypted = await bcrypt.hash(password, 10);
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      const newLogin = await Login.create(
+        [
+          {
+            email,
+            password: passwordEncrypted,
+          },
+        ],
+        { session }
+      );
+
+      console.log(newLogin);
+
+      const newUser = await User.create(
+        [
+          {
+            username,
+            firstName,
+            lastName,
+            birthdate: birthdateDateObject,
+            role,
+            loginId: newLogin[0]._id,
+          },
+        ],
+        { session }
+      );
+
+      console.log(newUser, newLogin);
+
+      await session.commitTransaction();
+      session.endSession();
+
+      res.json({
+        message: "Register successful",
+        status: 200,
+      });
+    } catch (err) {
+      console.error(err);
+
+      await session.abortTransaction();
+      session.endSession();
+
+      if (err.code === 11000) {
+        return res.json({
+          message: "User already exists",
+          status: 400,
+        });
+      }
+
+      return res.json({
+        message: "Register error",
+        status: 400,
+      });
+    }
+  } catch (err) {
+    console.error(err);
     return res.json({
-      message: "Register error",
-      status: 400,
+      message: "Server error",
+      status: 500,
     });
   }
 };
-
 exports.deleteUser = async (req, res) => {
   const id = req.body.id;
   const tokenWithBearer = req.headers["authorization"];
