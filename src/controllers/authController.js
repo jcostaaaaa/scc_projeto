@@ -72,61 +72,6 @@ exports.recoverPassword = async (req, res) => {
   }
 };
 
-/*  exports.changePassword = async (req, res) => {
-  try {
-    const { newPassword } = req.body;
-    const tokenWithBearer = req.headers["authorization"];
-
-    console.log(oldPassword);
-    console.log(newPassword);
-    console.log(tokenWithBearer);
-
-    if (!newPassword) {
-      console.log("all fields are required");
-      return apiResponse.send(res, apiResponse(400, "all fields are required"));
-    }
-
-    if (newPassword.length < 6) {
-      console.log("password must be at least 6 characters");
-      return apiResponse.send(
-        res,
-        apiResponse(400, "password must be at least 6 characters")
-      );
-    }
-
-    const token = tokenWithBearer.split(" ")[1];
-
-    const user = jwt.verify(token, process.env.TOKEN_SECRET);
-    console.log(user);
-    const id = user.id;
-    console.log(id);
-
-    const newHashedPassword = await bcrypt.hash(newPassword, 10);
-
-    const filter = { _id: user?.idLogin };
-    const update = { password: newHashedPassword };
-
-    const loginToUpdate =
-
-    const UserUpdated = await Login.findOneAndUpdate(filter, update, {
-      new: true,
-    });
-
-    console.log(UserUpdated);
-    console.log(update.password);
-    return apiResponse.send(
-      res,
-      apiResponse.createModelRes(200, "password changed")
-    );
-  } catch (err) {
-    return apiResponse.send(
-      res,
-      apiResponse.createModelRes(500, "password change error")
-    );
-  }
-};
- 
- */
 exports.login = async (req, res) => {
   const { email, password } = req.body;
 
@@ -414,8 +359,18 @@ exports.getAllUsersByRole = async (req, res) => {
 
     const token = tokenWithBearer.split(" ")[1];
 
-    const userLogged = jwt.verify(token, process.env.TOKEN_SECRET);
-    const roleOfUser = userLogged.role;
+    if (!token) {
+      return apiResponse.send(
+        res,
+        apiResponse.createModelRes(
+          401,
+          "Unauthorized for this endpoint, check the token",
+          {}
+        )
+      );
+    }
+
+    const roleOfUser = req.body.roleOfUser;
 
     if (
       roleOfUser === "admin" ||
@@ -426,15 +381,16 @@ exports.getAllUsersByRole = async (req, res) => {
       const filter = role ? { role } : {};
 
       const users = await User.find(filter);
+      const userCount = users.length;
 
       return apiResponse.send(
         res,
-        apiResponse.createModelRes(200, "Users", users)
+        apiResponse.createModelRes(200, "Users", { users, count: userCount })
       );
     } else {
       return apiResponse.send(
         res,
-        apiResponse.createModelRes(401, "Unauthorized for this endpoint", {})
+        apiResponse.createModelRes(400, "Error preparing request", {})
       );
     }
   } catch (error) {
