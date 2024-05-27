@@ -370,29 +370,24 @@ exports.getAllUsersByRole = async (req, res) => {
       );
     }
 
-    const roleOfUser = req.body.roleOfUser;
+    const rolesToFind = ["admin", "estafeta", "customer"];
+    const results = {};
 
-    if (
-      roleOfUser === "admin" ||
-      roleOfUser === "estafeta" ||
-      roleOfUser === "customer"
-    ) {
-      const { role } = req.body;
-      const filter = role ? { role } : {};
-
+    for (let i = 0; i < rolesToFind.length; i++) {
+      const role = rolesToFind[i];
+      const filter = { role };
       const users = await User.find(filter);
       const userCount = users.length;
 
-      return apiResponse.send(
-        res,
-        apiResponse.createModelRes(200, "Users", { users, count: userCount })
-      );
-    } else {
-      return apiResponse.send(
-        res,
-        apiResponse.createModelRes(400, "Error preparing request", {})
-      );
+      results[role] = {
+        users,
+        userCount,
+      };
     }
+    return apiResponse.send(
+      res,
+      apiResponse.createModelRes(200, "Users found", results)
+    );
   } catch (error) {
     console.error(error);
     return apiResponse.send(
