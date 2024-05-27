@@ -16,7 +16,7 @@ exports.recoverPassword = async (req, res) => {
     if (!newPassword) {
       return apiResponse.send(
         res,
-        apiResponse.createModelRes(400, "All fields are required")
+        apiResponse.createModelRes(400, "All fields are required!")
       );
     }
 
@@ -49,25 +49,25 @@ exports.recoverPassword = async (req, res) => {
       if (userUpdated) {
         return apiResponse.send(
           res,
-          apiResponse.createModelRes(200, "Password changed successfully")
+          apiResponse.createModelRes(200, "Password changed successfully!")
         );
       } else {
         return apiResponse.send(
           res,
-          apiResponse.createModelRes(400, "Failed to update password")
+          apiResponse.createModelRes(400, "Failed to update password!")
         );
       }
     } else {
       return apiResponse.send(
         res,
-        apiResponse.createModelRes(400, "User not found")
+        apiResponse.createModelRes(400, "User not found!")
       );
     }
   } catch (err) {
     console.error(err);
     return apiResponse.send(
       res,
-      apiResponse.createModelRes(500, "Password change error")
+      apiResponse.createModelRes(500, "Password change error!")
     );
   }
 };
@@ -143,10 +143,7 @@ exports.register = async (req, res) => {
     !email ||
     !role
   ) {
-    return res.json({
-      message: "All fields are required",
-      status: 400,
-    });
+   apiResponse.send(res, apiResponse.createModelRes(400, "All fields are required"));
   }
 
   // Validate password length
@@ -158,27 +155,29 @@ exports.register = async (req, res) => {
     return apiResponse.send(res, passwordLengthError);
   }
 
-  // Validate email format
   if (!email.includes("@")) {
-    const errorEmail = apiResponse.createModelRes(400, "Invalid email");
+    const errorEmail = apiResponse.createModelRes(400, {
+      message: "Invalid email",
+      status: 422,
+    });
     return apiResponse.send(res, errorEmail);
   }
 
   try {
     const existingLogin = await Login.findOne({ email });
     if (existingLogin) {
-      return res.json({
-        message: "Email already exists",
-        status: 400,
-      });
+      return apiResponse.send(
+        res,
+        apiResponse.createModelRes(400, "Email already exists")
+      );
     }
 
     const existingUser = await User.findOne({ username });
     if (existingUser) {
-      return res.json({
-        message: "Username already exists",
-        status: 400,
-      });
+      return apiResponse.send(
+        res,
+        apiResponse.createModelRes(400, "Username already exists")
+      );
     }
 
     const passwordEncrypted = await bcrypt.hash(password, 10);
@@ -218,34 +217,18 @@ exports.register = async (req, res) => {
       await session.commitTransaction();
       session.endSession();
 
-      res.json({
-        message: "Register successful",
-        status: 200,
-      });
+      apiResponse.send(res, apiResponse.createModelRes(200, "User created"));
     } catch (err) {
       console.error(err);
 
       await session.abortTransaction();
       session.endSession();
 
-      if (err.code === 11000) {
-        return res.json({
-          message: "User already exists",
-          status: 400,
-        });
-      }
-
-      return res.json({
-        message: "Register error",
-        status: 400,
-      });
+      apiResponse.send(res, apiResponse.createModelRes(500, "Server error"));
     }
   } catch (err) {
     console.error(err);
-    return res.json({
-      message: "Server error",
-      status: 500,
-    });
+    apiResponse.send(res, apiResponse.createModelRes(500, "Server error"));
   }
 };
 exports.deleteUser = async (req, res) => {
