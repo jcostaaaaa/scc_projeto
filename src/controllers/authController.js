@@ -143,7 +143,10 @@ exports.register = async (req, res) => {
     !email ||
     !role
   ) {
-   apiResponse.send(res, apiResponse.createModelRes(400, "All fields are required"));
+    apiResponse.send(
+      res,
+      apiResponse.createModelRes(400, "All fields are required")
+    );
   }
 
   // Validate password length
@@ -370,6 +373,39 @@ exports.getAllUsersByRole = async (req, res) => {
     return apiResponse.send(
       res,
       apiResponse.createModelRes(200, "Users found", results)
+    );
+  } catch (error) {
+    console.error(error);
+    return apiResponse.send(
+      res,
+      apiResponse.createModelRes(500, "Internal Server Error", {})
+    );
+  }
+};
+exports.getUserById = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const tokenWithBearer = req.headers["authorization"];
+
+    const token = tokenWithBearer.split(" ")[1];
+
+    if (!token) {
+      return apiResponse.send(
+        res,
+        apiResponse.createModelRes(
+          401,
+          "Unauthorized for this endpoint, check the token",
+          {}
+        )
+      );
+    }
+
+    const filter = { _id: id };
+    const user = await User.find(filter);
+
+    return apiResponse.send(
+      res,
+      apiResponse.createModelRes(200, "User found", user)
     );
   } catch (error) {
     console.error(error);
