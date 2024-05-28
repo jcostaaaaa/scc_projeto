@@ -361,7 +361,7 @@ exports.getAllUsersByRole = async (req, res) => {
 
     for (let i = 0; i < rolesToFind.length; i++) {
       const role = rolesToFind[i];
-      const filter = { role };
+      const filter = { role: role, isDeleted: false };
       const users = await User.find(filter);
       const userCount = users.length;
 
@@ -400,12 +400,45 @@ exports.getUserById = async (req, res) => {
       );
     }
 
-    const filter = { _id: id };
+    const filter = { _id: id, isDeleted: false };
     const user = await User.find(filter);
 
     return apiResponse.send(
       res,
       apiResponse.createModelRes(200, "User found", user)
+    );
+  } catch (error) {
+    console.error(error);
+    return apiResponse.send(
+      res,
+      apiResponse.createModelRes(500, "Internal Server Error", {})
+    );
+  }
+};
+
+exports.getAllUsers = async (req, res) => {
+  try {
+    const tokenWithBearer = req.headers["authorization"];
+
+    const token = tokenWithBearer.split(" ")[1];
+
+    if (!token) {
+      return apiResponse.send(
+        res,
+        apiResponse.createModelRes(
+          401,
+          "Unauthorized for this endpoint, check the token",
+          {}
+        )
+      );
+    }
+
+    const filter = { isDeleted: false };
+    const users = await User.find(filter);
+
+    return apiResponse.send(
+      res,
+      apiResponse.createModelRes(200, "User founds", users)
     );
   } catch (error) {
     console.error(error);

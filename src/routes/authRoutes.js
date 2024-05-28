@@ -17,6 +17,8 @@ router.route("/editUser").post(authController.editUser);
 router.route("/resetPassword").post(resetPasswordController.create);
 router.route("/checkCode").get(resetPasswordController.checkCode);
 router.route("/getUserById/:id").get(authController.getUserById);
+router.route("/getAllUsers").get(authController.getAllUsers);
+
 
 
 module.exports = router;
