@@ -448,3 +448,21 @@ exports.getAllUsers = async (req, res) => {
     );
   }
 };
+
+exports.getAllUsersWithoutToken = async (req, res) => {
+  try {
+    const filter = { isDeleted: false };
+    const users = await User.find(filter);
+
+    return apiResponse.send(
+      res,
+      apiResponse.createModelRes(200, "User founds", users)
+    );
+  } catch (error) {
+    console.error(error);
+    return apiResponse.send(
+      res,
+      apiResponse.createModelRes(500, "Internal Server Error", {})
+    );
+  }
+};
