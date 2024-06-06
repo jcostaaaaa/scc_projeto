@@ -12,6 +12,7 @@ router.route("/getAllUsersWithoutToken").get(authController.getAllUsersWithoutTo
 router.use(authMiddleware);
 router.route("/recoverPassword").post(authController.recoverPassword);
 router.route("/deleteUser").put(authController.deleteUser);
+router.route("/deleteAccount").put(authController.deleteAccount);
 router.route("/logout").post(authController.logout);
 router.route("/getAllUsersByRole").get(authController.getAllUsersByRole);
 router.route("/editUser").post(authController.editUser);

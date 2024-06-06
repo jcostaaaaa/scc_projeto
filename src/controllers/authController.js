@@ -72,6 +72,65 @@ exports.recoverPassword = async (req, res) => {
   }
 };
 
+/* exports.recoverPasswordWithoutToken = async (req, res) => {
+  const { newPassword } = req.body;
+
+  try {
+    if (!newPassword) {
+      return apiResponse.send(
+        res,
+        apiResponse.createModelRes(400, "All fields are required!")
+      );
+    }
+
+    if (newPassword.length < 6) {
+      return apiResponse.send(
+        res,
+        apiResponse.createModelRes(
+          400,
+          "Password must be at least 6 characters"
+        )
+      );
+    }
+
+    const newHashedPassword = await bcrypt.hash(newPassword, 10);
+
+    const loginToUpdate = await User.findOne({ _id: idUserLogged });
+
+    if (loginToUpdate != null) {
+      const filter = { _id: loginToUpdate.loginId };
+      const update = { password: newHashedPassword };
+
+      const userUpdated = await Login.findOneAndUpdate(filter, update, {
+        new: true,
+      });
+
+      if (userUpdated) {
+        return apiResponse.send(
+          res,
+          apiResponse.createModelRes(200, "Password changed successfully!")
+        );
+      } else {
+        return apiResponse.send(
+          res,
+          apiResponse.createModelRes(400, "Failed to update password!")
+        );
+      }
+    } else {
+      return apiResponse.send(
+        res,
+        apiResponse.createModelRes(400, "User not found!")
+      );
+    }
+  } catch (err) {
+    console.error(err);
+    return apiResponse.send(
+      res,
+      apiResponse.createModelRes(500, "Password change error!")
+    );
+  }
+}; */
+
 exports.login = async (req, res) => {
   const { email, password } = req.body;
 
@@ -89,9 +148,15 @@ exports.login = async (req, res) => {
     const UserNotFound = apiResponse.createModelRes(404, "user not found");
     return apiResponse.send(res, UserNotFound);
   }
+  
   if (await bcrypt.compare(password, user.password)) {
     const idUserLogged = user._id;
     const userLogged = await User.findOne({ loginId: idUserLogged }).lean();
+
+    if(userLogged.isDeleted == true) {
+      return apiResponse.send(res, apiResponse.createModelRes(400, "user has been deleted"));
+    }
+
 
     const id = userLogged._id;
     const username = user.username;
@@ -280,6 +345,45 @@ exports.deleteUser = async (req, res) => {
     {}
   );
   return apiResponse.send(res, deletedErrorResponse);
+};
+
+exports.deleteAccount = async (req, res) => {
+  const tokenWithBearer = req.headers["authorization"];
+  const token = tokenWithBearer.split(" ")[1];
+
+  const userLogged = jwt.verify(token, process.env.TOKEN_SECRET);
+
+  try {
+    const user = await User.findById(userLogged?.id);
+    console.log(user);
+    if (!user) {
+      const errorFind = apiResponse.createModelRes(404, "UserNotFound", {});
+      return apiResponse.send(res, errorFind);
+    }
+    if (user.isDeleted == true) {
+      const errorFind = apiResponse.createModelRes(
+        404,
+        "UserAlreadyDeleted",
+        {}
+      );
+      return apiResponse.send(res, errorFind);
+    }
+
+    user.isDeleted = true;
+    user.save();
+
+    const deletedResponse = apiResponse.createModelRes(200, "UserDeleted", {});
+    return apiResponse.send(res, deletedResponse);
+  } catch (err) {
+    console.error(err);
+
+    const deletedErrorResponse = apiResponse.createModelRes(
+      400,
+      "Unhauthorized",
+      {}
+    );
+    return apiResponse.send(res, deletedErrorResponse);
+  }
 };
 
 exports.editUser = async (req, res) => {
