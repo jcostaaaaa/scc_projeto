@@ -8,7 +8,7 @@ const apiResponse = require("../utils/response");
 const { generateAccessToken } = require("../utils/auth");
 const { addToBlacklist } = require("../utils/blacklist");
 
-exports.recoverPassword = async (req, res) => {
+exports.changePassword = async (req, res) => {
   const { newPassword } = req.body;
   const tokenWithBearer = req.headers["authorization"];
 
@@ -72,8 +72,9 @@ exports.recoverPassword = async (req, res) => {
   }
 };
 
-/* exports.recoverPasswordWithoutToken = async (req, res) => {
+ exports.resetPassword = async (req, res) => {
   const { newPassword } = req.body;
+  const {userId} = req.body;
 
   try {
     if (!newPassword) {
@@ -95,7 +96,7 @@ exports.recoverPassword = async (req, res) => {
 
     const newHashedPassword = await bcrypt.hash(newPassword, 10);
 
-    const loginToUpdate = await User.findOne({ _id: idUserLogged });
+    const loginToUpdate = await User.findOne({ _id: userId });
 
     if (loginToUpdate != null) {
       const filter = { _id: loginToUpdate.loginId };
@@ -129,7 +130,7 @@ exports.recoverPassword = async (req, res) => {
       apiResponse.createModelRes(500, "Password change error!")
     );
   }
-}; */
+}; 
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
