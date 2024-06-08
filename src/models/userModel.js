@@ -41,6 +41,18 @@ const userSchema = new schema(
       type: Boolean,
       default: false,
     },
+    address: {
+      type: String,
+      required: false,
+    },
+    phoneNumber: {
+      type: String,
+      required: false,
+    },
+    nif: {
+      type: String,
+      required: false,
+    },
   },
   { collection: "users" }
 );

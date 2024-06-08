@@ -72,9 +72,9 @@ exports.changePassword = async (req, res) => {
   }
 };
 
- exports.resetPassword = async (req, res) => {
+exports.resetPassword = async (req, res) => {
   const { newPassword } = req.body;
-  const {userId} = req.body;
+  const { userId } = req.body;
 
   try {
     if (!newPassword) {
@@ -130,7 +130,7 @@ exports.changePassword = async (req, res) => {
       apiResponse.createModelRes(500, "Password change error!")
     );
   }
-}; 
+};
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
@@ -149,15 +149,17 @@ exports.login = async (req, res) => {
     const UserNotFound = apiResponse.createModelRes(404, "user not found");
     return apiResponse.send(res, UserNotFound);
   }
-  
+
   if (await bcrypt.compare(password, user.password)) {
     const idUserLogged = user._id;
     const userLogged = await User.findOne({ loginId: idUserLogged }).lean();
 
-    if(userLogged.isDeleted == true) {
-      return apiResponse.send(res, apiResponse.createModelRes(400, "user has been deleted"));
+    if (userLogged.isDeleted == true) {
+      return apiResponse.send(
+        res,
+        apiResponse.createModelRes(400, "user has been deleted")
+      );
     }
-
 
     const id = userLogged._id;
     const username = user.username;
@@ -195,8 +197,18 @@ exports.login = async (req, res) => {
 exports.register = async (req, res) => {
   console.log(req.body);
 
-  const { username, email, password, firstName, lastName, birthdate, role } =
-    req.body;
+  const {
+    username,
+    email,
+    password,
+    firstName,
+    lastName,
+    birthdate,
+    role,
+    address,
+    nif,
+    phoneNumber,
+  } = req.body;
   const birthdateDateObject = new Date(birthdate);
 
   // Validate required fields
@@ -207,7 +219,10 @@ exports.register = async (req, res) => {
     !lastName ||
     !birthdate ||
     !email ||
-    !role
+    !role ||
+    !address ||
+    !nif ||
+    !phoneNumber
   ) {
     apiResponse.send(
       res,
@@ -276,6 +291,9 @@ exports.register = async (req, res) => {
             birthdate: birthdateDateObject,
             role,
             loginId: newLogin[0]._id,
+            address,
+            phoneNumber,
+            nif,
           },
         ],
         { session }
@@ -391,7 +409,7 @@ exports.editUser = async (req, res) => {
   const tokenWithBearer = req.headers["authorization"];
   const token = tokenWithBearer.split(" ")[1];
 
-  const { email, firstName, lastName, username } = req.body;
+  const { email, firstName, lastName, username,address,phoneNumber } = req.body;
   console.log(email);
   console.log(firstName);
   console.log(lastName);
@@ -420,6 +438,8 @@ exports.editUser = async (req, res) => {
     user.firstName = firstName;
     user.lastName = lastName;
     user.username = username;
+    user.address = address;
+    user.phoneNumber = phoneNumber;
     loginOfUser.email = email;
 
     await user.save();
