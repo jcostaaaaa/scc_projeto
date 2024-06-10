@@ -7,6 +7,8 @@ const Login = require("../models/login");
 const apiResponse = require("../utils/response");
 const { generateAccessToken } = require("../utils/auth");
 const { addToBlacklist } = require("../utils/blacklist");
+const upload = require('../utils/upload'); 
+
 
 exports.changePassword = async (req, res) => {
   const { newPassword } = req.body;
@@ -405,58 +407,65 @@ exports.deleteAccount = async (req, res) => {
   }
 };
 
-exports.editUser = async (req, res) => {
-  const tokenWithBearer = req.headers["authorization"];
-  const token = tokenWithBearer.split(" ")[1];
+exports.editUser = [
+  upload.single('image'), 
+  async (req, res) => {
+    const tokenWithBearer = req.headers["authorization"];
+    const token = tokenWithBearer.split(" ")[1];
 
-  const { email, firstName, lastName, username,address,phoneNumber } = req.body;
-  console.log(email);
-  console.log(firstName);
-  console.log(lastName);
-  console.log(username);
+    const { email, firstName, lastName, username, address, phoneNumber } = req.body;
 
-  const userLogged = jwt.verify(token, process.env.TOKEN_SECRET);
+    const userLogged = jwt.verify(token, process.env.TOKEN_SECRET);
 
-  try {
-    const user = await User.findById(userLogged.id);
+    try {
+      const user = await User.findById(userLogged.id);
 
-    if (!user) {
+      if (!user) {
+        return apiResponse.send(
+          res,
+          apiResponse.createModelRes(404, "UserNotFound", {})
+        );
+      }
+
+      const loginOfUser = await Login.findById(user.loginId);
+
+      if (!loginOfUser) {
+        return apiResponse.send(
+          res,
+          apiResponse.createModelRes(404, "This user does not have login", {})
+        );
+      }
+
+      user.firstName = firstName;
+      user.lastName = lastName;
+      user.username = username;
+      user.address = address;
+      user.phoneNumber = phoneNumber;
+      loginOfUser.email = email;
+
+      if (req.file) {
+        user.image = {
+          data: req.file.buffer,
+          contentType: req.file.mimetype
+        };
+      }
+
+      await user.save();
+      await loginOfUser.save();
+
       return apiResponse.send(
         res,
-        apiResponse.createModelRes(404, "UserNotFound", {})
+        apiResponse.createModelRes(200, "UserUpdated", {})
       );
-    }
-
-    const loginOfUser = await Login.findById(user.loginId);
-
-    if (!loginOfUser) {
+    } catch (err) {
+      console.error(err);
       return apiResponse.send(
         res,
-        apiResponse.createModelRes(404, "This user does not have login", {})
+        apiResponse.createModelRes(500, "Error updating user", {})
       );
     }
-    user.firstName = firstName;
-    user.lastName = lastName;
-    user.username = username;
-    user.address = address;
-    user.phoneNumber = phoneNumber;
-    loginOfUser.email = email;
-
-    await user.save();
-    await loginOfUser.save();
-
-    return apiResponse.send(
-      res,
-      apiResponse.createModelRes(200, "UserUpdated", {})
-    );
-  } catch (err) {
-    console.error(err);
-    return apiResponse.send(
-      res,
-      apiResponse.createModelRes(500, "Error updating user", {})
-    );
   }
-};
+];
 
 exports.logout = async (req, res) => {
   const tokenWithBearer = req.headers["authorization"];
