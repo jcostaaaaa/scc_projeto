@@ -7,8 +7,7 @@ const Login = require("../models/login");
 const apiResponse = require("../utils/response");
 const { generateAccessToken } = require("../utils/auth");
 const { addToBlacklist } = require("../utils/blacklist");
-const upload = require('../utils/upload'); 
-
+const upload = require("../utils/upload");
 
 exports.changePassword = async (req, res) => {
   const { newPassword } = req.body;
@@ -408,12 +407,13 @@ exports.deleteAccount = async (req, res) => {
 };
 
 exports.editUser = [
-  upload.single('image'), 
+  upload.single("image"),
   async (req, res) => {
     const tokenWithBearer = req.headers["authorization"];
     const token = tokenWithBearer.split(" ")[1];
 
-    const { email, firstName, lastName, username, address, phoneNumber } = req.body;
+    const { email, firstName, lastName, username, address, phoneNumber } =
+      req.body;
 
     const userLogged = jwt.verify(token, process.env.TOKEN_SECRET);
 
@@ -444,9 +444,10 @@ exports.editUser = [
       loginOfUser.email = email;
 
       if (req.file) {
+        const base64Image = req.file.buffer.toString("base64");
         user.image = {
-          data: req.file.buffer,
-          contentType: req.file.mimetype
+          data: base64Image,
+          contentType: req.file.mimetype,
         };
       }
 
@@ -464,7 +465,7 @@ exports.editUser = [
         apiResponse.createModelRes(500, "Error updating user", {})
       );
     }
-  }
+  },
 ];
 
 exports.logout = async (req, res) => {
@@ -521,6 +522,17 @@ exports.getUserById = async (req, res) => {
     const id = req.params.id;
     const tokenWithBearer = req.headers["authorization"];
 
+    if (!tokenWithBearer) {
+      return apiResponse.send(
+        res,
+        apiResponse.createModelRes(
+          401,
+          "Unauthorized for this endpoint, check the token",
+          {}
+        )
+      );
+    }
+
     const token = tokenWithBearer.split(" ")[1];
 
     if (!token) {
@@ -535,11 +547,39 @@ exports.getUserById = async (req, res) => {
     }
 
     const filter = { _id: id, isDeleted: false };
-    const user = await User.find(filter);
+    const user = await User.findOne(filter);
+
+    if (!user) {
+      return apiResponse.send(
+        res,
+        apiResponse.createModelRes(404, "UserNotFound", {})
+      );
+    }
+
+    let userData = {
+      _id: user._id,
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      birthdate: user.birthdate,
+      role: user.role,
+      loginId: user.loginId,
+      isDeleted: user.isDeleted,
+      address: user.address,
+      phoneNumber: user.phoneNumber,
+      nif: user.nif
+    };
+
+    if (user.image && user.image.data) {
+      userData.image = {
+        contentType: user.image.contentType,
+        data: user.image.data.toString('base64')  // Convert Buffer to base64 string
+      };
+    }
 
     return apiResponse.send(
       res,
-      apiResponse.createModelRes(200, "User found", user)
+      apiResponse.createModelRes(200, "User found", [userData])  // Retorna um array com um único usuário
     );
   } catch (error) {
     console.error(error);
@@ -549,6 +589,7 @@ exports.getUserById = async (req, res) => {
     );
   }
 };
+
 
 exports.getAllUsers = async (req, res) => {
   try {

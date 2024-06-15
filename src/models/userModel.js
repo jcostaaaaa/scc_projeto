@@ -1,4 +1,3 @@
-"use strict";
 const mongoose = require("mongoose");
 const schema = mongoose.Schema;
 const userSchema = new schema(
@@ -34,7 +33,7 @@ const userSchema = new schema(
       required: true,
     },
     image: {
-      data: Buffer, 
+      data: String, 
       contentType: String,
     },
     isDeleted: {
@@ -56,6 +55,7 @@ const userSchema = new schema(
   },
   { collection: "users" }
 );
+
 const User = mongoose.model("User", userSchema);
 
 module.exports = User;
