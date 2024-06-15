@@ -162,13 +162,13 @@ exports.login = async (req, res) => {
       );
     }
 
-    const id = userLogged._id;
-    const username = user.username;
-    const role = userLogged.role;
-    const idLogin = user._id;
+    const id = userLogged?._id;
+    const username = user?.username;
+    const role = userLogged?.role;
+    const idLogin = user?._id;
     const emailUser = email;
-    const nameUser = userLogged.firstName + " " + userLogged.lastName;
-
+    const nameUser = userLogged?.firstName + " " + userLogged?.lastName;
+    const nifUser = userLogged?.nif
     try {
       const accessToken = generateAccessToken({
         id,
@@ -177,6 +177,7 @@ exports.login = async (req, res) => {
         idLogin,
         emailUser,
         nameUser,
+        nifUser
       });
       const loginDone = apiResponse.createModelRes(200, "login success", {
         accessToken,
