@@ -368,6 +368,54 @@ exports.deleteUser = async (req, res) => {
   return apiResponse.send(res, deletedErrorResponse);
 };
 
+exports.restoreUser = async (req, res) => {
+  const id = req.body.id;
+  const tokenWithBearer = req.headers["authorization"];
+  const token = tokenWithBearer.split(" ")[1];
+
+  const userLogged = jwt.verify(token, process.env.TOKEN_SECRET);
+  const roleOfUser = userLogged.role;
+  console.log(roleOfUser);
+  console.log(id);
+
+  if (roleOfUser == "admin") {
+    try {
+      const user = await User.findById(id);
+      console.log(user);
+      if (!user) {
+        const errorFind = apiResponse.createModelRes(404, "UserNotFound", {});
+        return apiResponse.send(res, errorFind);
+      }
+      if (user.isDeleted == false) {
+        const errorFind = apiResponse.createModelRes(
+          404,
+          "UserAlreadyActive",
+          {}
+        );
+        return apiResponse.send(res, errorFind);
+      }
+
+      user.isDeleted = false;
+      user.save();
+
+      const deletedResponse = apiResponse.createModelRes(
+        200,
+        "UserDeleted",
+        {}
+      );
+      return apiResponse.send(res, deletedResponse);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  const deletedErrorResponse = apiResponse.createModelRes(
+    400,
+    "Unhauthorized",
+    {}
+  );
+  return apiResponse.send(res, deletedErrorResponse);
+};
+
 exports.deleteAccount = async (req, res) => {
   const tokenWithBearer = req.headers["authorization"];
   const token = tokenWithBearer.split(" ")[1];
@@ -473,8 +521,7 @@ exports.editUserSemFoto = async (req, res) => {
   const tokenWithBearer = req.headers["authorization"];
   const token = tokenWithBearer.split(" ")[1];
 
-  const { email, username, address, phoneNumber } =
-    req.body;
+  const { email, username, address, phoneNumber } = req.body;
 
   const userLogged = jwt.verify(token, process.env.TOKEN_SECRET);
 
@@ -657,8 +704,7 @@ exports.getAllUsers = async (req, res) => {
       );
     }
 
-    const filter = { isDeleted: false };
-    const users = await User.find(filter);
+    const users = await User.find();
 
     return apiResponse.send(
       res,
