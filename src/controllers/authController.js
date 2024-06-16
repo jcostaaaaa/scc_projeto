@@ -168,7 +168,7 @@ exports.login = async (req, res) => {
     const idLogin = user?._id;
     const emailUser = email;
     const nameUser = userLogged?.firstName + " " + userLogged?.lastName;
-    const nifUser = userLogged?.nif
+    const nifUser = userLogged?.nif;
     try {
       const accessToken = generateAccessToken({
         id,
@@ -177,7 +177,7 @@ exports.login = async (req, res) => {
         idLogin,
         emailUser,
         nameUser,
-        nifUser
+        nifUser,
       });
       const loginDone = apiResponse.createModelRes(200, "login success", {
         accessToken,
@@ -469,6 +469,55 @@ exports.editUser = [
   },
 ];
 
+exports.editUserSemFoto = async (req, res) => {
+  const tokenWithBearer = req.headers["authorization"];
+  const token = tokenWithBearer.split(" ")[1];
+
+  const { email, username, address, phoneNumber } =
+    req.body;
+
+  const userLogged = jwt.verify(token, process.env.TOKEN_SECRET);
+
+  try {
+    const user = await User.findById(userLogged.id);
+
+    if (!user) {
+      return apiResponse.send(
+        res,
+        apiResponse.createModelRes(404, "UserNotFound", {})
+      );
+    }
+
+    const loginOfUser = await Login.findById(user.loginId);
+
+    if (!loginOfUser) {
+      return apiResponse.send(
+        res,
+        apiResponse.createModelRes(404, "This user does not have login", {})
+      );
+    }
+
+    user.username = username;
+    user.address = address;
+    user.phoneNumber = phoneNumber;
+    loginOfUser.email = email;
+
+    await user.save();
+    await loginOfUser.save();
+
+    return apiResponse.send(
+      res,
+      apiResponse.createModelRes(200, "UserUpdated", {})
+    );
+  } catch (err) {
+    console.error(err);
+    return apiResponse.send(
+      res,
+      apiResponse.createModelRes(500, "Error updating user", {})
+    );
+  }
+};
+
 exports.logout = async (req, res) => {
   const tokenWithBearer = req.headers["authorization"];
   console.log(tokenWithBearer);
@@ -568,19 +617,19 @@ exports.getUserById = async (req, res) => {
       isDeleted: user.isDeleted,
       address: user.address,
       phoneNumber: user.phoneNumber,
-      nif: user.nif
+      nif: user.nif,
     };
 
     if (user.image && user.image.data) {
       userData.image = {
         contentType: user.image.contentType,
-        data: user.image.data.toString('base64')  // Convert Buffer to base64 string
+        data: user.image.data.toString("base64"), // Convert Buffer to base64 string
       };
     }
 
     return apiResponse.send(
       res,
-      apiResponse.createModelRes(200, "User found", [userData])  // Retorna um array com um único usuário
+      apiResponse.createModelRes(200, "User found", [userData]) // Retorna um array com um único usuário
     );
   } catch (error) {
     console.error(error);
@@ -590,7 +639,6 @@ exports.getUserById = async (req, res) => {
     );
   }
 };
-
 
 exports.getAllUsers = async (req, res) => {
   try {

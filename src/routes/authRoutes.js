@@ -23,6 +23,7 @@ router.route("/deleteAccount").put(authController.deleteAccount);
 router.route("/logout").post(authController.logout);
 router.route("/getAllUsersByRole").get(authController.getAllUsersByRole);
 router.route("/editUser").post(authController.editUser);
+router.route("/editUserW").post(authController.editUserSemFoto);
 router.route("/getUserById/:id").get(authController.getUserById);
 router.route("/getAllUsers").get(authController.getAllUsers);
 
