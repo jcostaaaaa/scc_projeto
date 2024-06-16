@@ -19,6 +19,7 @@ router.route("/resetPassword").post(authController.resetPassword);
 router.use(authMiddleware);
 router.route("/changePassword").post(authController.changePassword);
 router.route("/deleteUser").put(authController.deleteUser);
+router.route("/restoreUser").put(authController.restoreUser);
 router.route("/deleteAccount").put(authController.deleteAccount);
 router.route("/logout").post(authController.logout);
 router.route("/getAllUsersByRole").get(authController.getAllUsersByRole);
@@ -28,3 +29,4 @@ router.route("/getUserById/:id").get(authController.getUserById);
 router.route("/getAllUsers").get(authController.getAllUsers);
 
 module.exports = router;
+
